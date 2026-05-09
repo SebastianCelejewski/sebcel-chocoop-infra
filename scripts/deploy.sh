@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+set -e
+
+ENVIRONMENT="$1"
+
+if [ -z "$ENVIRONMENT" ]; then
+  echo "Usage: ./deploy.sh <dev|uat|prod>"
+  exit 1
+fi
+
+case "$ENVIRONMENT" in
+  dev|uat|prod)
+    ;;
+  *)
+    echo "Invalid environment: $ENVIRONMENT"
+    exit 1
+    ;;
+esac
+
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+if [ "$ENVIRONMENT" = "prod" ] && [ "$CURRENT_BRANCH" != "main" ]; then
+  echo "Production deployment is allowed only from main branch"
+  exit 1
+fi
+
+echo "Deploying branch '$CURRENT_BRANCH' to environment '$ENVIRONMENT'"
+
+terraform -chdir=terraform/environments/$ENVIRONMENT init
+
+terraform -chdir=terraform/environments/$ENVIRONMENT apply
